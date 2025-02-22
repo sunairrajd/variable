@@ -1,4 +1,4 @@
- import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, forwardRef, useContext, useImperativeHandle } from 'react';
 import {
     Sheet,
     SheetContent,
@@ -10,6 +10,7 @@ import {
   import { Input } from "@/components/ui/input"
 import SongSearchCard from './ui/SongSearchCard';
 import { SpotifySearch, searchTrack } from '@/utils/SpotifySearch';
+import { RenderInfoContext } from '@/app/make/page';
 
 // Define an interface for the track data
 interface Track {
@@ -19,12 +20,19 @@ interface Track {
   image: string;
 }
 
-const MusicBottom = () => {
+const MusicBottom = forwardRef((_, ref) => {
   const [side, setSide] = useState<"bottom" | "right">("bottom");
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<Track[]>([]); // State to store search results
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isOpen, setIsOpen] = useState(false); // State to control the sheet open/close
+  const { setRenderInfo } = useContext(RenderInfoContext); // Consume context
+
+  
+    // Update the P5TextureCreator whenever renderInfo changes
+    
+  
 
   useEffect(() => {
     const handleResize = () => {
@@ -48,7 +56,7 @@ const MusicBottom = () => {
       setError(null); // Reset error state
       try {
         const results = await searchTrack(query);
-        console.log(results); // Log the raw results before formatting
+        console.log(results); // Log the entire results object
         // Assuming 'results' is an array of track objects
         const formattedResults: Track[] = results.map(track => ({
           id: track.id,
@@ -57,7 +65,7 @@ const MusicBottom = () => {
           image: (track.albumArt && track.albumArt && track.albumArt.length > 0) ? track.albumArt : '', // Check if album images are defined and have elements
         }));
         setSearchResults(formattedResults); // Update state with formatted results
-        console.log(formattedResults);
+        // console.log(formattedResults);
       } catch (error) {
         console.error('Error searching for track:', error);
         setError('Failed to fetch search results. Please try again.'); // Set error message
@@ -70,42 +78,69 @@ const MusicBottom = () => {
     }
   };
 
+  // Use useImperativeHandle to expose a method to the parent
+  useImperativeHandle(ref, () => ({
+    openSheet: () => {
+      setIsOpen(true); // Logic to open the sheet
+    },
+  }));
+
   return (
-    <Sheet className='bg-white'>
-      <SheetTrigger> it</SheetTrigger>
-      <SheetContent side={side} style={{ backgroundColor: 'white' }}>
-        <SheetHeader>
-          <SheetTitle>Search for a Song</SheetTitle>
-        
-          <Input 
-            type="search" 
-            placeholder="Search for a song" 
-            value={searchQuery}
-            onChange={handleSearchChange}
-          />
-          <SheetDescription>
-           
-          </SheetDescription>
-          <div>
-          {searchResults.length > 0 ? (
-              <div className="search-results">
-                {searchResults.map(track => (
-                  <SongSearchCard 
-                    key={track.id}
-                    title={track.title} 
-                    artist={track.artist} 
-                    image={track.image} 
-                  />
-                ))}
-              </div>
-            ) : (
-              <p>No results found.</p>
-            )}
-          </div>
-        </SheetHeader>
-      </SheetContent>
-    </Sheet>
+    <>
+    
+      <Sheet open={isOpen} onOpenChange={setIsOpen}>
+        {/* <SheetTrigger>
+          Open Sheet
+        </SheetTrigger> */}
+        <SheetContent side={side} style={{ backgroundColor: 'white' }}>
+          <SheetHeader>
+            <SheetTitle>Search for a Song</SheetTitle>
+            <Input 
+              type="search" 
+              placeholder="Search for a song" 
+              value={searchQuery}
+              onChange={handleSearchChange}
+            />
+            <SheetDescription>
+            </SheetDescription>
+            <div>
+              {searchResults.length > 0 ? (
+                <div className="search-results">
+                  {searchResults.map((track, index) => (
+                    <SongSearchCard 
+                      key={track.id || index}
+                      title={track.title} 
+                      artist={track.artist} 
+                      image={track.image} 
+                      onClick={() => {
+                        console.log("SongSearchCard clicked");
+                        const updatedInfo = {
+                          trackId: track.id,
+                          trackName: track.title,
+                          trackArtists: track.artist,
+                          artWork: track.image,
+                        };
+                        console.log(updatedInfo);
+                        setRenderInfo(updatedInfo); // Update context
+
+                        // Dispatch custom event to update P5Sketch
+                        const event = new CustomEvent('updateRenderInfo', { detail: updatedInfo });
+                        window.dispatchEvent(event);
+
+                        setIsOpen(false);
+                      }}
+                    />
+                  ))}
+                </div>
+              ) : (
+                <p>No results found.</p>
+              )}
+            </div>
+          </SheetHeader>
+        </SheetContent>
+      </Sheet>
+    </>
   );
-};
+});
 
 export default MusicBottom;

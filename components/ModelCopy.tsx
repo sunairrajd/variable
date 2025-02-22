@@ -27,37 +27,7 @@ const Model = () => {
       trackArtists: renderInfo.trackArtists,
       artWork: renderInfo.artWork
     };
-    
-    const textureCreator = new P5TextureCreator(info);
-    p5TextureRef.current = textureCreator;
-
-    // Wait for texture to be ready before applying it
-    textureCreator.waitForReady().then(() => {
-      console.log('P5 texture is ready');
-      // Force a re-render to apply texture
-      scene?.traverse((child: any) => {
-        if (child.isMesh && child.material?.name === 'testt') {
-          const texture = textureCreator.getTexture();
-          if (texture) {
-            console.log('Applying ready texture to mesh');
-            texture.wrapS = texture.wrapT = RepeatWrapping;
-            texture.flipY = false;
-            
-            texture.offset.set(0, 0);
-            texture.repeat.set(1, 1);
-            texture.center.set(0.5, 0.5);
-            texture.rotation = 0;
-            
-            child.material = new MeshLambertMaterial({
-              map: texture,
-              transparent: true,
-              side: DoubleSide,
-            });
-            child.material.needsUpdate = true;
-          }
-        }
-      });
-    });
+    p5TextureRef.current = new P5TextureCreator(info);
     
     return () => {
       // Cleanup texture to prevent memory leaks
@@ -65,6 +35,39 @@ const Model = () => {
       p5TextureRef.current = null;
     };
   }, [renderInfo]);
+
+  useEffect(() => {
+    scene?.traverse((child: any) => {
+      if (child.isMesh && child.material?.name === 'testt') {
+        const texture = p5TextureRef.current?.getTexture();
+        if (texture) {
+          texture.wrapS = texture.wrapT = RepeatWrapping;
+          texture.flipY = false;
+          
+          texture.offset.set(0, 0);
+          texture.repeat.set(1, 1);
+          texture.center.set(0.5, 0.5);
+          texture.rotation = 0;
+          
+          child.material = new MeshLambertMaterial({
+            map: texture,
+            transparent: true,
+            side: DoubleSide,
+          });
+          child.material.needsUpdate = true;
+        }
+      }
+    });
+
+    // Set the position of the model
+    if (scene) {
+      scene.position.set(0, 0.06,0);
+    }
+  }, [scene]);
+
+
+
+
 
   const applyColor = (color: string, materialName: string = 'testt') => {
     scene?.traverse((child: any) => {

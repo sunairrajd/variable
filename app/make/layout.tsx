@@ -23,11 +23,11 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
-      <body className="bg-gray-200">
+   
+      <div className="bg-gray-200">
       {children}
        
-      </body>
-    </html>
+      </div>
+  
   );
 }

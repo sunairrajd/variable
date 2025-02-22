@@ -2,6 +2,7 @@
 
 import { Canvas } from "@react-three/fiber"
 import Model from './Model'
+import P5Sketch from './P5Sketch'
 import { Suspense, useRef } from "react"
 import { Environment, OrbitControls, Grid, AxesHelper } from "@react-three/drei"
 
@@ -28,7 +29,7 @@ export default function Scene() {
         <directionalLight position={[-5, -5, 5]} intensity={3} />
        
         <Suspense fallback={null}>
-          <Model position={[0, 0, 0]} />
+          <Model position={[1, 0.06, 3]} />
         </Suspense>
         <OrbitControls
           enableZoom={true}

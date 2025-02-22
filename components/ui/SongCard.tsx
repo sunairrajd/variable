@@ -1,6 +1,10 @@
 import * as React from "react"
+import { useRef } from "react"
 import { MusicalNoteIcon } from '@heroicons/react/24/solid'
 import { IoShuffle } from "react-icons/io5";
+import { SongContext } from '@/app/make/page'
+import { useContext, useState } from 'react';
+import MusicBottom from '@/components/MusicBottom';
 
 interface SongCardProps {
   title: string
@@ -10,6 +14,14 @@ interface SongCardProps {
 }
 
 export default function SongCard({ title, artist, image, onChange }: SongCardProps) {
+  const musicBottomRef = useRef(null);
+
+  const handleChangeClick = () => {
+    if (musicBottomRef.current) {
+      musicBottomRef.current.openSheet();
+    }
+  };
+
   const iconStyle = {
     position: 'absolute',
     top: 0,
@@ -19,6 +31,7 @@ export default function SongCard({ title, artist, image, onChange }: SongCardPro
     color: 'gray',
     left:'-3px',
   };
+
 
   return (
     <div className="max-w-sm rounded-md inline-block border border-blue-200 bg-blue-50 p-5 mx-4 flex items-center">
@@ -33,11 +46,13 @@ export default function SongCard({ title, artist, image, onChange }: SongCardPro
         <p className="text-gray-600 text-sm">{artist}</p>
       </div>
       <button
-        onClick={onChange}
+        onClick={handleChangeClick}
         className="text-sm text-blue-500 hover:text-blue-900 geist-600"
       >
         Change
       </button>
+
+      <MusicBottom ref={musicBottomRef} />
     </div>
   )
 }

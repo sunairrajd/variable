@@ -1,7 +1,11 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useContext } from 'react'
 import { MinusIcon, ArrowLeftIcon, ArrowRightIcon } from '@heroicons/react/24/solid'
 import 'animate.css';
 import SongCard from './ui/SongCard';
+import { RenderInfoContext } from '@/app/make/page';
+
+
+
 
 interface StepWizardProps {
   isMinimized: boolean
@@ -16,11 +20,17 @@ const StepWizard: React.FC<StepWizardProps> = ({ isMinimized, toggleMinimized })
     field3: '',
   })
   
+  const { renderInfo } = useContext(RenderInfoContext);
+
+
+
   // New state to track animation direction
   const [animationDirection, setAnimationDirection] = useState<'next' | 'prev' | null>(null)
   const [animate, setAnimate] = useState(false)
 
   const steps = ['Choose a song', 'Customize', 'Finalize']
+
+  
 
   const nextStep = () => {
     setAnimationDirection('next')
@@ -35,8 +45,7 @@ const StepWizard: React.FC<StepWizardProps> = ({ isMinimized, toggleMinimized })
   }
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target
-    setFormData((prev) => ({ ...prev, [name]: value }))
+    
   }
 
   // Reset the animation state after animation completes
@@ -99,7 +108,14 @@ const StepWizard: React.FC<StepWizardProps> = ({ isMinimized, toggleMinimized })
       {!isMinimized && (
         <div className="form-content backdrop-blur-md p-4 flex-1">
           {currentStep === 0 && (
-           <SongCard title="Shape of You" artist="Ed Sheeran" image="/art.png" onChange={handleChange}/>
+           <SongCard 
+             title={renderInfo.trackName} 
+             artist={renderInfo.trackArtists} 
+             image={renderInfo.artWork} 
+             onChange={handleChange}
+           />
+   
+           
           )}
           {currentStep === 1 && (
             <input
@@ -125,6 +141,7 @@ const StepWizard: React.FC<StepWizardProps> = ({ isMinimized, toggleMinimized })
         </div>
       )}
 
+     
     </div>
     
 
