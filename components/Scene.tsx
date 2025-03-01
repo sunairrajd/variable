@@ -10,19 +10,27 @@ function HDREnvironment() {
   return <Environment files="./arcing.hdr" /> // Ensure the path is correct
 }
 
-export default function Scene() {
+export default function Scene({ currentStep }: { currentStep: number }) {
   const cameraRef = useRef<any>(null)
+
+  // Define camera positions based on the current step
+  const cameraPositions = [
+    [0, 0, 0.5], // Position for step 0
+    [1, 1, 1],   // Position for step 1
+    [2, 2, 2],   // Position for step 2
+    [0, 2, 2],   // New position for step 2 (change as needed)
+  ];
 
   return (
     <div style={{ height: '100%', width: '100%' }}>
       <Canvas
-        style={{ background: '#f6f6f6', height: '100%', width: '100%', }}
+        style={{ background: '#f6f6f6', height: '100%', width: '100%' }}
         camera={{
           ref: cameraRef,
-          position: [0, 0, 0.5],
+          position: cameraPositions[currentStep] || cameraPositions[0], // Default to step 0 if out of bounds
           fov: 75,
           near: 0.1,
-          far: 1000
+          far: 1000,
         }}
       >
         <ambientLight intensity={4} />

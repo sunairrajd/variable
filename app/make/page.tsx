@@ -15,10 +15,12 @@ import Scene from '@/components/Scene'
 import P5Sketch from '@/components/P5Sketch'
 
 
+
 export const RenderInfoContext = createContext();
 
 export default function Home() {
   const [isMinimized, setIsMinimized] = useState(false)
+  const [currentStep, setCurrentStep] = useState(0)
 
   const toggleMinimized = () => {
     setIsMinimized((prev) => !prev)
@@ -54,7 +56,12 @@ export default function Home() {
           >
             <Scene />
           </div>
-          <StepWizard isMinimized={isMinimized} toggleMinimized={toggleMinimized} />
+          <StepWizard 
+            isMinimized={isMinimized} 
+            toggleMinimized={toggleMinimized} 
+            currentStep={currentStep}
+            setCurrentStep={setCurrentStep}
+          />
         </div>
       </div>
     </RenderInfoContext.Provider>

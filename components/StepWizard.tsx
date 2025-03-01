@@ -7,6 +7,7 @@ import { RenderInfoContext } from '@/app/make/page';
 
 
 
+
 interface StepWizardProps {
   isMinimized: boolean
   toggleMinimized: () => void
@@ -141,7 +142,8 @@ const StepWizard: React.FC<StepWizardProps> = ({ isMinimized, toggleMinimized })
         </div>
       )}
 
-     
+      
+
     </div>
     
 
