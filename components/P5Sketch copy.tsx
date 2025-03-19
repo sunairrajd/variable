@@ -3,47 +3,47 @@
 import p5 from 'p5';
 import { CanvasTexture } from 'three';
 import { uploadImageToFirebase } from './ImageUpload';
-import React, { useEffect, useRef, useContext, useState } from 'react';
+import React, { useEffect, useRef, useContext } from 'react';
 import { RenderInfoContext } from '@/app/make/page';
+import { useState } from 'react';
 
-
-interface TrackDetails {
-  name: string;
-  artists: string[];
+interface RenderInfo {
+  trackId: string | null;
+  trackName: string;
+  trackArtists: string;
+  artWork: string | null;
+  customName: string;
+  step?: number;
 }
 
 export class P5TextureCreator {
   private canvas: HTMLCanvasElement | null = null;
   private texture: CanvasTexture | null = null;
-  private trackDetails: TrackDetails = {
-    name: 'Loading default track...',
-    artists: ['Please wait']
-  };
   private p5Instance: p5.p5InstanceExtensions | null = null;
   private isSaving: boolean = false;
+  private isReady: boolean = false;
+  private readyCallback: (() => void) | null = null;
 
-  constructor(width: number = 1024, height: number = 1024) {
-    console.log('P5Sketch: Constructor called');
+  constructor(private renderInfo: RenderInfo) {
+    console.log('P5Sketch: Constructor called with renderInfo:', renderInfo);
     
     // Check if event listeners are already added
     if (!window['p5TextureCreatorListenersAdded']) {
       window['p5TextureCreatorListenersAdded'] = true;
 
-      // Listen for track detail updates
-      window.addEventListener('updateTrackDetails', ((event: CustomEvent) => {
-        console.log('P5Sketch: Received event with details:', event.detail);
-        this.trackDetails = event.detail;
-        if (this.p5Instance) {
-          console.log('P5Sketch: Redrawing with new details');
-          this.p5Instance.redraw();
-          console.log('P5Sketch: Redraw is done');
-        }
-      }) as EventListener);
-
       // Listen for save request
       window.addEventListener('saveSketch', (() => {
         console.log('P5Sketch: Save request received');
         this.saveSketch();
+      }) as EventListener);
+
+      // Add listener for renderInfo updates
+      window.addEventListener('updateRenderInfo', ((event: CustomEvent) => {
+        console.log('P5Sketch: Received new renderInfo:', event.detail);
+        this.renderInfo = event.detail;
+        if (this.p5Instance) {
+          this.p5Instance.redraw();
+        }
       }) as EventListener);
 
       console.log('P5Sketch: Event listeners added');
@@ -57,12 +57,17 @@ export class P5TextureCreator {
       this.p5Instance = p;
       
       p.setup = () => {
-        const canvas = p.createCanvas(width, height);
+        const canvas = p.createCanvas(1024, 1024);
         canvas.hide();
         this.canvas = canvas.elt;
         this.texture = new CanvasTexture(this.canvas);
         p.colorMode(p.RGB, 255, 255, 255, 1);
         p.noLoop();  // Stop continuous looping
+        p.draw(); // Force initial draw
+        this.isReady = true;
+        if (this.readyCallback) {
+          this.readyCallback();
+        }
       };
 
       p.draw = () => {
@@ -72,6 +77,7 @@ export class P5TextureCreator {
         // Draw base rectangle
         p.noStroke();
         p.fill(255, 0, 0, 0);
+        p.rect(675,553,209,263)
         p.rect(170, 553, 209, 263);
 
         // Add text for track name and artist
@@ -80,8 +86,12 @@ export class P5TextureCreator {
         p.textAlign(p.CENTER, p.CENTER);
         
         const textX = 170 + 209/2;
-        p.text(this.trackDetails.name, textX, 200);
-        p.text(this.trackDetails.artists.join(', '), textX, 240);
+        console.log('Track Name:', this.renderInfo.trackName);
+        console.log('Track Artists:', this.renderInfo.trackArtists);
+        p.text(this.renderInfo.trackName, textX, 200);
+        p.text(this.renderInfo.trackArtists, textX, 240);
+        p.text(this.renderInfo.customName, 779, 208);
+        p.text(this.renderInfo.step, 779, 230);
 
         // Calculate center of rectangle for flower
         const centerX = 170 + 209/2;
@@ -146,7 +156,41 @@ export class P5TextureCreator {
   getTexture(): CanvasTexture | null {
     return this.texture;
   }
-} 
 
+  // Add new method to check if texture is ready
+  public waitForReady(): Promise<void> {
+    if (this.isReady) {
+      return Promise.resolve();
+    }
+    return new Promise((resolve) => {
+      this.readyCallback = resolve;
+    });
+  }
+}
+
+// Functional component to use the class
+const P5Sketch: React.FC = () => {
+  const contextValue = useContext(RenderInfoContext);
+  console.log("Context Value in P5Sketch:", contextValue);
+  const renderInfo = contextValue?.renderInfo || {};
+  const canvasRef = useRef<HTMLDivElement>(null);
+  const [textureCreator, setTextureCreator] = useState<P5TextureCreator | null>(null);
+
+  useEffect(() => {
+    console.log("Full renderInfo object:", renderInfo);
+    // Create the texture creator only once
+    if (!textureCreator) {
+      const creator = new P5TextureCreator(renderInfo);
+      setTextureCreator(creator);
+    } else {
+      // Update the existing texture creator when renderInfo changes
+      window.dispatchEvent(new CustomEvent('updateRenderInfo', { detail: renderInfo }));
+    }
+  }, [renderInfo, textureCreator]);
+
+  return <div ref={canvasRef}></div>;
+};
+
+export default P5Sketch;
 
 // Example usage

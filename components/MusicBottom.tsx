@@ -114,18 +114,14 @@ const MusicBottom = forwardRef((_, ref) => {
                       image={track.image} 
                       onClick={() => {
                         console.log("SongSearchCard clicked");
-                        const updatedInfo = {
+                        // Update only the track-related fields while preserving other values
+                        setRenderInfo(prevInfo => ({
+                          ...prevInfo, // Keep all existing values
                           trackId: track.id,
                           trackName: track.title,
                           trackArtists: track.artist,
                           artWork: track.image,
-                        };
-                        console.log(updatedInfo);
-                        setRenderInfo(updatedInfo); // Update context
-
-                        // Dispatch custom event to update P5Sketch
-                        const event = new CustomEvent('updateRenderInfo', { detail: updatedInfo });
-                        window.dispatchEvent(event);
+                        }));
 
                         setIsOpen(false);
                       }}

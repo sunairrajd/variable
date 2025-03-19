@@ -5,6 +5,7 @@ import Model from './Model'
 import P5Sketch from './P5Sketch'
 import { Suspense, useRef } from "react"
 import { Environment, OrbitControls, Grid, AxesHelper } from "@react-three/drei"
+import ColorSelector from './ui/colorSelector'
 
 function HDREnvironment() {
   return <Environment files="./arcing.hdr" /> // Ensure the path is correct
@@ -21,8 +22,13 @@ export default function Scene({ currentStep }: { currentStep: number }) {
     [0, 2, 2],   // New position for step 2 (change as needed)
   ];
 
+
+  
+
   return (
     <div style={{ height: '100%', width: '100%' }}>
+
+
       <Canvas
         style={{ background: '#f6f6f6', height: '100%', width: '100%' }}
         camera={{

@@ -7,7 +7,7 @@ import { P5TextureCreator } from './P5Sketch';
 import { RenderInfoContext } from '@/app/make/page';
 
 
-const MODEL_PATH = "/shirt2.glb"
+const MODEL_PATH = "/frontnback.glb"
 
 const Model = () => {
   const { renderInfo } = useContext(RenderInfoContext);  // Get renderInfo from context
@@ -25,7 +25,10 @@ const Model = () => {
       trackId: renderInfo.trackId,
       trackName: renderInfo.trackName,
       trackArtists: renderInfo.trackArtists,
-      artWork: renderInfo.artWork
+      artWork: renderInfo.artWork,
+      customName1: renderInfo.customName1,
+      customName2: renderInfo.customName2,
+      step: renderInfo.step,
     };
     
     const textureCreator = new P5TextureCreator(info);
@@ -84,9 +87,24 @@ const Model = () => {
     });
   };
 
-  applyColor('#d3d3ff', 'lambert1.001');
+  // Add a useEffect to apply tshirtColorHex from renderInfo
+  useEffect(() => {
+    if (!renderInfo || !scene) return;
+
+    // Apply the tshirtColorHex to the material
+    if (renderInfo.tshirtColorHex) {
+      applyColor(renderInfo.tshirtColorHex, 'lambert1.001');
+    } else {
+      applyColor('#000000', 'lambert1.001'); // Default color if not specified
+    }
+    
+  }, [renderInfo, scene]);
+
+  // Keep these other color applications as they were
   applyColor('#d3d3ff', 'Cotton_Canvas_FRONT_1498.006');
-  applyColor('#FF0000', 'testt');
+  applyColor('#00FF00', 'testt');
+  applyColor('#0000FF', 'backside2');
+  // applyColor('#00FF00', 'backside');  // Apply green color to material named 'back'
   
   
 

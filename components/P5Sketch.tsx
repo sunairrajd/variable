@@ -11,8 +11,12 @@ interface RenderInfo {
   trackId: string | null;
   trackName: string;
   trackArtists: string;
-  artWork: string | null;
+  // artWork: string | null;
+  customName: string | null;
+  step?: number;
 }
+
+
 
 export class P5TextureCreator {
   private canvas: HTMLCanvasElement | null = null;
@@ -36,8 +40,8 @@ export class P5TextureCreator {
       }) as EventListener);
 
       // Add listener for renderInfo updates
-      window.addEventListener('updateRenderInfo', ((event: CustomEvent) => {
-        console.log('P5Sketch: Received new renderInfo:', event.detail);
+      window.addEventListener('renderInfoUpdated', ((event: CustomEvent) => {
+        console.log('P5Sketch: Received new renderInfo (FULL):', JSON.stringify(event.detail));
         this.renderInfo = event.detail;
         if (this.p5Instance) {
           this.p5Instance.redraw();
@@ -75,6 +79,7 @@ export class P5TextureCreator {
         // Draw base rectangle
         p.noStroke();
         p.fill(255, 0, 0, 0);
+        p.rect(675,553,209,263)
         p.rect(170, 553, 209, 263);
 
         // Add text for track name and artist
@@ -85,8 +90,12 @@ export class P5TextureCreator {
         const textX = 170 + 209/2;
         console.log('Track Name:', this.renderInfo.trackName);
         console.log('Track Artists:', this.renderInfo.trackArtists);
+        console.log('customName:', this.renderInfo.customName);
         p.text(this.renderInfo.trackName, textX, 200);
         p.text(this.renderInfo.trackArtists, textX, 240);
+        p.text(this.renderInfo.customName1, 779, 208);
+        p.text(this.renderInfo.customName2, 779, 230);
+
 
         // Calculate center of rectangle for flower
         const centerX = 170 + 209/2;
@@ -165,18 +174,30 @@ export class P5TextureCreator {
 
 // Functional component to use the class
 const P5Sketch: React.FC = () => {
-  const { renderInfo } = useContext(RenderInfoContext);
-  const canvasRef = useRef<HTMLDivElement>(null);
+  const contextValue = useContext(RenderInfoContext);
+  console.log("Context Value in P5Sketch:", contextValue);
+  const renderInfo = contextValue?.renderInfo || {
+    trackId: null,
+    trackName: '',
+    trackArtists: '',
+    // artWork: null,
+    customName: null
+  };
+  console.log("RenderInfo before creating P5TextureCreator:", JSON.stringify(renderInfo));
+
+  const [textureCreator, setTextureCreator] = useState<P5TextureCreator | null>(null);
 
   useEffect(() => {
-    const textureCreator = new P5TextureCreator(renderInfo.renderInfo); // Pass just the renderInfo object
-
-    // Your p5.js setup and drawing logic here
-
-    return () => {
-      // Cleanup if necessary
-    };
-  }, [renderInfo]);
+    console.log("Full renderInfo object:", JSON.stringify(renderInfo));
+    // Create the texture creator only once
+    if (!textureCreator) {
+      const creator = new P5TextureCreator(renderInfo);
+      setTextureCreator(creator);
+    } else {
+      // Update the existing texture creator when renderInfo changes
+      window.dispatchEvent(new CustomEvent('renderInfoUpdated', { detail: renderInfo }));
+    }
+  }, [renderInfo, textureCreator]);
 
   return <div ref={canvasRef}></div>;
 };
