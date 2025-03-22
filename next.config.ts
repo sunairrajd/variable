@@ -2,16 +2,10 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   /* config options here */
-  reactStrictMode: true,
+  // reactStrictMode: true,
 
   images: {
-    remotePatterns: [
-      {
-        protocol: 'https',
-        hostname: 'i.scdn.co',
-        pathname: '/image/**', // Add pathname pattern to be more specific
-      },
-    ],
+   
     // You can temporarily add domains back alongside remotePatterns for backward compatibility
     domains: ['i.scdn.co'],
     // Increase image caching duration if needed
@@ -79,4 +73,3 @@ const nextConfig: NextConfig = {
 
 export default nextConfig;
 
-module.exports = nextConfig 
