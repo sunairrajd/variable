@@ -1,12 +1,11 @@
 'use client'
 
+import React, { useState } from 'react';
+// import { getAuth } from 'firebase/auth';
+import { RecaptchaVerifier, signInWithPhoneNumber, ConfirmationResult } from 'firebase/auth';
 
-
-
-import React, { useState, useEffect } from 'react';
-import { getAuth, RecaptchaVerifier, signInWithPhoneNumber } from 'firebase/auth';
-import { initializeApp } from "firebase/app"; // Import Firebase app initialization
-import { app,auth } from '../../services/firebase'; // Adjust the import path as necessary
+// import { app } from '../../services/firebase'; // Adjust the import path as necessary
+import { auth } from '../../services/firebase'; // Adjust the import path as necessary
 
 
 // Initialize Firebase
@@ -14,8 +13,9 @@ import { app,auth } from '../../services/firebase'; // Adjust the import path as
 function PhoneSignin() {
     const [phoneNumber, setPhoneNumber] = useState('');
     const [otp, setOtp] = useState('');
+    const [confirmationResult, setConfirmationResult] = useState<ConfirmationResult | null>(null);
 
-    const handlePhoneNumberChange = (value) => {
+    const handlePhoneNumberChange = (value: string) => {
         // Ensure the phone number is in E.164 format
         const formattedValue = value.replace(/\D/g, ''); // Remove non-digit characters
         if (formattedValue.length > 0) {
@@ -33,9 +33,8 @@ function PhoneSignin() {
             }
         });
         signInWithPhoneNumber(auth, phoneNumber, appVerifier)
-            .then((confirmationResult) => {
-                // SMS sent. Prompt user to enter the code from the message.
-                window.confirmationResult = confirmationResult; // Store confirmationResult to verify OTP later
+            .then((result) => {
+                setConfirmationResult(result);
                 alert('OTP sent!');
             }).catch((error) => {
                 // Handle Errors here.
@@ -45,9 +44,15 @@ function PhoneSignin() {
     };
 
     const handleVerify = () => {
-        window.confirmationResult.confirm(otp).then((result) => {
+        if (!confirmationResult) {
+            alert('Please request OTP first');
+            return;
+        }
+
+        confirmationResult.confirm(otp).then((result) => {
             // User signed in successfully.
-            const user = result.user;
+            console.log('User authenticated:', result.user);
+            // You might want to store the user info or redirect them
             alert('Verification successful! User signed in.');
         }).catch((error) => {
             // User couldn't sign in (bad verification code?)
@@ -62,7 +67,7 @@ function PhoneSignin() {
             <input 
                 type="tel"
                 value={phoneNumber} 
-                onChange={(e) => handlePhoneNumberChange(e.target.value)} 
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => handlePhoneNumberChange(e.target.value)} 
                 placeholder="Enter phone number" 
             />
             <button onClick={handleSubmit}>Submit</button>

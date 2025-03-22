@@ -1,3 +1,5 @@
+"use client"
+
 import React, { useEffect, useState, forwardRef, useContext, useImperativeHandle } from 'react';
 import {
     Sheet,
@@ -5,34 +7,48 @@ import {
     SheetDescription,
     SheetHeader,
     SheetTitle,
-    SheetTrigger,
   } from "@/components/ui/sheet"
+  // import {SheetTrigger} from "@/components/ui/sheet"
   import { Input } from "@/components/ui/input"
 import SongSearchCard from './ui/SongSearchCard';
-import { SpotifySearch, searchTrack } from '@/utils/SpotifySearch';
-import { RenderInfoContext } from '@/app/make/page';
+// import { SpotifySearch } from '@/utils/SpotifySearch';
+import { searchTrack } from '@/utils/SpotifySearch';
+import { RenderInfoContext } from '@/app/contexts/RenderInfoContext';
+
+// Define an interface for the API response track data
+interface ApiTrack {
+  id?: string;
+  name?: string;
+  artists?: Array<{ name: string }>;
+  albumArt?: string[];
+}
 
 // Define an interface for the track data
 interface Track {
-  id: string;
+  id: string | null;
   title: string;
   artist: string;
   image: string;
 }
 
-const MusicBottom = forwardRef((_, ref) => {
-  const [side, setSide] = useState<"bottom" | "right">("bottom");
-  const [searchQuery, setSearchQuery] = useState('');
-  const [searchResults, setSearchResults] = useState<Track[]>([]); // State to store search results
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [isOpen, setIsOpen] = useState(false); // State to control the sheet open/close
-  const { setRenderInfo } = useContext(RenderInfoContext); // Consume context
+// Define the ref type
+export interface MusicBottomRef {
+  openSheet: () => void;
+}
 
-  
-    // Update the P5TextureCreator whenever renderInfo changes
-    
-  
+// Remove the unused empty interface
+// interface MusicBottomProps {
+// }
+
+// Use React.ForwardRefRenderFunction with proper typing
+const MusicBottom = forwardRef<MusicBottomRef, Record<string, never>>((props, ref) => {
+  const [side, setSide] = useState<"bottom" | "right">("bottom");
+  const [searchQuery, setSearchQuery] = useState<string>('');
+  const [searchResults, setSearchResults] = useState<Track[]>([]); // State to store search results
+  // const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [isOpen, setIsOpen] = useState<boolean>(false); // State to control the sheet open/close
+  const { setRenderInfo } = useContext(RenderInfoContext); // Consume context
 
   useEffect(() => {
     const handleResize = () => {
@@ -52,46 +68,71 @@ const MusicBottom = forwardRef((_, ref) => {
     setSearchQuery(query);
 
     if (query.length > 1) { // Start searching when query length is greater than 2
-      setIsLoading(true);
       setError(null); // Reset error state
       try {
         const results = await searchTrack(query);
-        console.log(results); // Log the entire results object
+        console.log('API Results:', results); // Log the entire results object for debugging
+        
         // Assuming 'results' is an array of track objects
-        const formattedResults: Track[] = results.map(track => ({
-          id: track.id,
-          title: track.name,
-          artist: (track.artists && track.artists.length > 0) ? track.artists[0]: 'Unknown Artist', // Check if artists array is defined and has elements
-          image: (track.albumArt && track.albumArt && track.albumArt.length > 0) ? track.albumArt : '', // Check if album images are defined and have elements
-        }));
+        const formattedResults: Track[] = results.map((track: ApiTrack) => {
+          console.log('Processing track:', track); // Log each track for debugging
+          
+          // Extract artist name safely
+          let artistName = 'Unknown Artist';
+          if (track.artists && Array.isArray(track.artists) && track.artists.length > 0) {
+            // Check if artists is an array of strings or objects
+            if (typeof track.artists[0] === 'string') {
+              artistName = track.artists[0];
+            } else if (typeof track.artists[0] === 'object' && track.artists[0] && 'name' in track.artists[0]) {
+              artistName = track.artists[0].name;
+            }
+          }
+          
+          // Extract image URL safely
+          let imageUrl = '';
+          if (track.albumArt && Array.isArray(track.albumArt) && track.albumArt.length > 0) {
+            imageUrl = track.albumArt[0];
+          } else if (track.albumArt && typeof track.albumArt === 'string') {
+            imageUrl = track.albumArt;
+          }
+          
+          console.log('Extracted data:', {
+            id: track.id || null,
+            title: track.name || 'Unknown Title',
+            artist: artistName,
+            image: imageUrl
+          });
+          
+          return {
+            id: track.id || null,
+            title: track.name || 'Unknown Title',
+            artist: artistName,
+            image: imageUrl
+          };
+        });
+        
+        console.log('Formatted results:', formattedResults);
         setSearchResults(formattedResults); // Update state with formatted results
-        // console.log(formattedResults);
-      } catch (error) {
+      } catch (error: unknown) {
         console.error('Error searching for track:', error);
-        setError('Failed to fetch search results. Please try again.'); // Set error message
+        setError('Failed to fetch search results. Please try again.');
         setSearchResults([]); // Clear results on error
-      } finally {
-        setIsLoading(false);
       }
     } else {
       setSearchResults([]); // Clear results if query is too short
     }
   };
 
-  // Use useImperativeHandle to expose a method to the parent
+  // Expose the openSheet method to the parent component
   useImperativeHandle(ref, () => ({
     openSheet: () => {
-      setIsOpen(true); // Logic to open the sheet
-    },
+      setIsOpen(true);
+    }
   }));
 
   return (
-    <>
-    
+    <div>
       <Sheet open={isOpen} onOpenChange={setIsOpen}>
-        {/* <SheetTrigger>
-          Open Sheet
-        </SheetTrigger> */}
         <SheetContent side={side} style={{ backgroundColor: 'white' }}>
           <SheetHeader>
             <SheetTitle>Search for a Song</SheetTitle>
@@ -109,18 +150,18 @@ const MusicBottom = forwardRef((_, ref) => {
                   {searchResults.map((track, index) => (
                     <SongSearchCard 
                       key={track.id || index}
-                      title={track.title} 
-                      artist={track.artist} 
-                      image={track.image} 
-                      onClick={() => {
+                      title={track.title || "Unknown Title"} 
+                      artist={track.artist || "Unknown Artist"} 
+                      image={track.image || null} 
+                      onSelect={() => {
                         console.log("SongSearchCard clicked");
                         // Update only the track-related fields while preserving other values
                         setRenderInfo(prevInfo => ({
                           ...prevInfo, // Keep all existing values
-                          trackId: track.id,
-                          trackName: track.title,
-                          trackArtists: track.artist,
-                          artWork: track.image,
+                          trackId: track.id || '', 
+                          trackName: track.title || "Unknown Title",
+                          trackArtists: track.artist || "Unknown Artist",
+                          artWork: track.image || '', 
                         }));
 
                         setIsOpen(false);
@@ -132,11 +173,15 @@ const MusicBottom = forwardRef((_, ref) => {
                 <p>No results found.</p>
               )}
             </div>
+            {error && <p className="error-message">{error}</p>}
           </SheetHeader>
         </SheetContent>
       </Sheet>
-    </>
+    </div>
   );
 });
+
+// Add display name for better debugging
+MusicBottom.displayName = 'MusicBottom';
 
 export default MusicBottom;

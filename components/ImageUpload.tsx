@@ -35,7 +35,13 @@ export const uploadImageToFirebase = async (imageBlob: Blob): Promise<string> =>
 }
 
 // Function to save upload details to Firestore
-const saveUploadDetailsToFirestore = async (filename: string, url: string, phoneNumber: string = null, uid: string = null, designData: object = null) => {
+const saveUploadDetailsToFirestore = async (
+  filename: string, 
+  url: string, 
+  phoneNumber: string | null = null, 
+  uid: string | null = null, 
+  designData: object | null = null
+) => {
   const fileRef = doc(db, COLLECTION_NAME, filename)
 
   const uploadInfo = {
@@ -51,7 +57,7 @@ const saveUploadDetailsToFirestore = async (filename: string, url: string, phone
     await setDoc(fileRef, uploadInfo)
     console.log('Upload details saved successfully:', uploadInfo)
   } catch (error) {
-    console.error('Error saving upload details:', error.message)
+    console.error('Error saving upload details:', (error as Error).message || 'Unknown error occurred')
   }
 }
 

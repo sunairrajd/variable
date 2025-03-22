@@ -1,4 +1,6 @@
-import { Group, MeshLambertMaterial, ClampToEdgeWrapping, DoubleSide, TextureLoader } from 'three';
+"use client"
+
+import { Group, Mesh, MeshLambertMaterial, ClampToEdgeWrapping, DoubleSide, TextureLoader, Object3D } from 'three';
 import { useGLTF } from '@react-three/drei';
 import { useRef, useEffect } from 'react';
 import { useLoader } from '@react-three/fiber';
@@ -11,8 +13,8 @@ const ImageModel = () => {
   const dogeTexture = useLoader(TextureLoader, '/red.png');
   
   useEffect(() => {
-    scene?.traverse((child: any) => {
-      if (child.isMesh && child.material.name === 'testt') {
+    scene?.traverse((child: Object3D) => {
+      if (child instanceof Mesh && child.material && 'name' in child.material && child.material.name === 'testt') {
         if (dogeTexture) {
           dogeTexture.wrapS = dogeTexture.wrapT = ClampToEdgeWrapping;
           
@@ -37,12 +39,13 @@ const ImageModel = () => {
 
 
   const applyColor = (color: string, materialName: string = 'lambert1.001') => {
-    scene?.traverse((child: any) => {
+    scene?.traverse((child: Object3D) => {
       if (
-        child.isMesh && 
+        child instanceof Mesh && 
         child.material && 
+        'name' in child.material &&
         child.material.name === materialName && 
-        child.material.color
+        'color' in child.material
       ) {
         try {
           child.material.color.set(color);

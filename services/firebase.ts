@@ -1,7 +1,6 @@
-// Import the functions you need from the SDKs you need
-import { initializeApp } from "firebase/app";
+"use client"
+import { initializeApp, getApps, getApp } from "firebase/app";
 import { getAnalytics } from "firebase/analytics";
-
 import { getFirestore } from 'firebase/firestore';
 import { getStorage } from "firebase/storage";
 import { getAuth } from "firebase/auth";
@@ -21,13 +20,23 @@ const firebaseConfig = {
     measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID
 };
 
-// Initialize Firebase
-const app = initializeApp(firebaseConfig);
+// Initialize Firebase only if it hasn't been initialized yet
+const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
 
-const analytics = getAnalytics(app);
+// Initialize services conditionally based on environment
+let analytics;
+if (typeof window !== 'undefined') {
+  try {
+    analytics = getAnalytics(app);
+  } catch (error) {
+    console.log('Analytics not available in this environment');
+  }
+}
+
 export const storage = getStorage(app);
 export const auth = getAuth(app); // Export the auth object
 
-
 export const db = getFirestore(app);
+
+export default app;
 

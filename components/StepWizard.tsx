@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useContext } from 'react'
-import { MinusIcon, ArrowLeftIcon, ArrowRightIcon } from '@heroicons/react/24/solid'
+import { ArrowLeftIcon, ArrowRightIcon } from '@heroicons/react/24/solid'
 import 'animate.css';
 import SongCard from './ui/SongCard';
-import { RenderInfoContext } from '@/app/make/page';
+import { RenderInfoContext } from '@/app/contexts/RenderInfoContext';
 import ColorSelector from './ui/colorSelector';
 
 
@@ -14,13 +14,19 @@ interface StepWizardProps {
   toggleMinimized: () => void
 }
 
+interface TshirtColor {
+  id: number;
+  name: string;
+  hex: string;
+}
+
 const StepWizard: React.FC<StepWizardProps> = ({ isMinimized, toggleMinimized }) => {
   const [currentStep, setCurrentStep] = useState(0)
-  const [formData, setFormData] = useState({
-    field1: '',
-    field2: '',
-    field3: '',
-  })
+  // const [formData, setFormData] = useState({
+  //   field1: '',
+  //   field2: '',
+  //   field3: '',
+  // })
   
   const { renderInfo, setRenderInfo } = useContext(RenderInfoContext);
 
@@ -59,25 +65,21 @@ const StepWizard: React.FC<StepWizardProps> = ({ isMinimized, toggleMinimized })
   }
 
   const handleChange1 = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
+    const { value } = e.target;
     
-      // Update the custom name in renderInfo for step 1
-      setRenderInfo({
-        ...renderInfo,
-        customName1: value
-      });
-
+    setRenderInfo({
+      ...renderInfo,
+      customName1: value
+    });
   }
 
   const handleChange2 = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
+    const { value } = e.target;
     
-      // Update the custom name in renderInfo for step 1
-      setRenderInfo({
-        ...renderInfo,
-        customName2: value
-      });
-
+    setRenderInfo({
+      ...renderInfo,
+      customName2: value
+    });
   }
 
   const tshirtColors = [
@@ -88,7 +90,7 @@ const StepWizard: React.FC<StepWizardProps> = ({ isMinimized, toggleMinimized })
     { id: 5, name: 'Green', hex: '#00FF00' },
   ];
 
-  const handleColorChange = (color) => {
+  const handleColorChange = (color: TshirtColor) => {
     console.log(`Selected color: ${color.name}`);
     // Update renderInfo with the selected color
     setRenderInfo({
@@ -166,8 +168,7 @@ const StepWizard: React.FC<StepWizardProps> = ({ isMinimized, toggleMinimized })
            <SongCard 
              title={renderInfo.trackName} 
              artist={renderInfo.trackArtists} 
-             image={renderInfo.artWork} 
-             
+             image={renderInfo.artWork || null}
            />
    
            
@@ -176,7 +177,7 @@ const StepWizard: React.FC<StepWizardProps> = ({ isMinimized, toggleMinimized })
             <input
               type="text"
               name="field2"
-              value={renderInfo.customName1}
+              value={renderInfo.customName1 || ''}
               onChange={handleChange1}
               placeholder="Enter custom name"
               className="text-gray-600 w-full p-2"
@@ -187,9 +188,9 @@ const StepWizard: React.FC<StepWizardProps> = ({ isMinimized, toggleMinimized })
             <input
               type="text"
               name="field3"
-              value={renderInfo.customName2}
+              value={renderInfo.customName2 || ''}
               onChange={handleChange2}
-              placeholder="Enter value for Step 3"
+              placeholder="Enter another custom name"
               className="text-gray-600 w-full p-2"
             />
           )}

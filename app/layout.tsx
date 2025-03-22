@@ -1,19 +1,20 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+// import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import '../styles/Home.module.css';
+import { AuthProvider } from '@/services/AuthContext';
 
 
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
+// const geistSans = Geist({
+//   variable: "--font-geist-sans",
+//   subsets: ["latin"],
+// });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
+// const geistMono = Geist_Mono({
+//   variable: "--font-geist-mono",
+//   subsets: ["latin"],
+// });
 
 export const metadata: Metadata = {
   title: "Create Next App",
@@ -28,8 +29,12 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className="bg-gray-200">
-      {children}
-       
+        <AuthProvider>
+          {/* Invisible reCAPTCHA container - make sure it has an ID and is visible */}
+          <div id="recaptcha-container" style={{ position: 'fixed', bottom: 0, right: 0 }}></div>
+          
+          {children}
+        </AuthProvider>
       </body>
     </html>
   );

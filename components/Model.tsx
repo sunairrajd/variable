@@ -1,15 +1,22 @@
-import React from 'react';
-import { useGLTF } from '@react-three/drei';
-import { useRef, useEffect, useContext } from 'react';
-import { Group, MeshLambertMaterial, MeshStandardMaterial, TextureLoader, RepeatWrapping, DoubleSide } from 'three';
-import { useLoader } from '@react-three/fiber';
-import { P5TextureCreator } from './P5Sketch';
-import { RenderInfoContext } from '@/app/make/page';
+"use client"
 
+import React, { useEffect, useRef, useCallback } from 'react';
+import { useGLTF } from '@react-three/drei';
+import { useContext } from 'react';
+import { Group, MeshLambertMaterial, RepeatWrapping, DoubleSide, Object3D, Mesh } from 'three';
+// import { MeshStandardMaterial, TextureLoader } from 'three';
+// import { useLoader } from '@react-three/fiber';
+import { P5TextureCreator } from './P5Sketch';
+import { RenderInfoContext, RenderInfo } from '@/app/contexts/RenderInfoContext';
+// import { Vector3 } from 'three';
+
+interface ModelProps {
+  position?: [number, number, number];
+}
 
 const MODEL_PATH = "/frontnback.glb"
 
-const Model = () => {
+const Model = ({ position = [0, 0, 0] }: ModelProps) => {
   const { renderInfo } = useContext(RenderInfoContext);  // Get renderInfo from context
   const group = useRef<Group>(null);
   const { scene } = useGLTF(MODEL_PATH);
@@ -21,14 +28,17 @@ const Model = () => {
   
   useEffect(() => {
     // Create the P5 texture creator with renderInfo from context
-    const info = {
-      trackId: renderInfo.trackId,
-      trackName: renderInfo.trackName,
-      trackArtists: renderInfo.trackArtists,
-      artWork: renderInfo.artWork,
-      customName1: renderInfo.customName1,
-      customName2: renderInfo.customName2,
-      step: renderInfo.step,
+    const info: RenderInfo = {
+      trackId: '',
+      trackName: '',
+      trackArtists: '',
+      artWork: null,
+      customName1: '',
+      customName2: '',
+      step: 1,
+      trypar: '',
+      tshirtColor: 'black',
+      tshirtColorHex: '#000000',
     };
     
     const textureCreator = new P5TextureCreator(info);
@@ -38,8 +48,8 @@ const Model = () => {
     textureCreator.waitForReady().then(() => {
       console.log('P5 texture is ready');
       // Force a re-render to apply texture
-      scene?.traverse((child: any) => {
-        if (child.isMesh && child.material?.name === 'testt') {
+      scene?.traverse((child: Object3D) => {
+        if (child instanceof Mesh && child.material?.name === 'testt') {
           const texture = textureCreator.getTexture();
           if (texture) {
             console.log('Applying ready texture to mesh');
@@ -69,10 +79,11 @@ const Model = () => {
     };
   }, [renderInfo]);
 
-  const applyColor = (color: string, materialName: string = 'testt') => {
-    scene?.traverse((child: any) => {
+  // Wrap applyColor in useCallback to prevent it from changing on every render
+  const applyColor = useCallback((color: string, materialName: string = 'testt') => {
+    scene?.traverse((child: Object3D) => {
       if (
-        child.isMesh && 
+        child instanceof Mesh && 
         child.material && 
         child.material.name === materialName && 
         child.material.color
@@ -85,7 +96,7 @@ const Model = () => {
         }
       }
     });
-  };
+  }, [scene]); // Add scene as a dependency
 
   // Add a useEffect to apply tshirtColorHex from renderInfo
   useEffect(() => {
@@ -98,7 +109,7 @@ const Model = () => {
       applyColor('#000000', 'lambert1.001'); // Default color if not specified
     }
     
-  }, [renderInfo, scene]);
+  }, [renderInfo, scene, applyColor]);
 
   // Keep these other color applications as they were
   applyColor('#d3d3ff', 'Cotton_Canvas_FRONT_1498.006');
@@ -114,10 +125,10 @@ const Model = () => {
       // Cleanup GLTF resources
       useGLTF.preload(MODEL_PATH);
     };
-  }, []);
+  }, [scene]); // Add scene to the dependency array
 
   return (
-    <group ref={group}>
+    <group ref={group} position={position}>
       <primitive object={scene} />
     </group>
   )

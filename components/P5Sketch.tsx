@@ -2,26 +2,61 @@
 
 import p5 from 'p5';
 import { CanvasTexture } from 'three';
-import { uploadImageToFirebase } from './ImageUpload';
-import React, { useEffect, useRef, useContext } from 'react';
-import { RenderInfoContext } from '@/app/make/page';
+// import { uploadImageToFirebase } from './ImageUpload';
+import React, { useEffect, useContext, useRef, useMemo } from 'react';
+// import {useRef} from 'react';
+import { RenderInfoContext } from '@/app/contexts/RenderInfoContext';
 import { useState } from 'react';
+import { saveDesign } from '@/services/saveDesign';
+
+// Extend the Window interface to include our custom property
+declare global {
+  interface Window {
+    p5TextureCreatorListenersAdded?: boolean;
+  }
+}
 
 interface RenderInfo {
   trackId: string | null;
   trackName: string;
   trackArtists: string;
   // artWork: string | null;
-  customName: string | null;
+  customName1: string | null;
+  customName2: string | null;
   step?: number;
+  trypar: string | null;
+  tshirtColor: string | null;
+  tshirtColorHex: string | null;
+  customName?: string | null;
 }
 
-
+// Define a type for the p5 sketch function parameter
+interface P5SketchFunctions {
+  setup: () => void;
+  draw: () => void;
+  createCanvas: (width: number, height: number) => { elt: HTMLCanvasElement; hide: () => void };
+  colorMode: (mode: Record<string, unknown>, max1: number, max2: number, max3: number, max4: number) => void;
+  noLoop: () => void;
+  redraw: () => void;
+  clear: () => void;
+  blendMode: (mode: Record<string, unknown>) => void;
+  noStroke: () => void;
+  fill: (r: number | string, g?: number, b?: number, a?: number) => void;
+  rect: (x: number, y: number, w: number, h: number) => void;
+  textSize: (size: number) => void;
+  textAlign: (horizAlign: Record<string, unknown>, vertAlign: Record<string, unknown>) => void;
+  text: (str: string | null, x: number, y: number) => void;
+  circle: (x: number, y: number, d: number) => void;
+  radians: (degrees: number) => number;
+  RGB: Record<string, unknown>;
+  BLEND: Record<string, unknown>;
+  CENTER: Record<string, unknown>;
+}
 
 export class P5TextureCreator {
   private canvas: HTMLCanvasElement | null = null;
   private texture: CanvasTexture | null = null;
-  private p5Instance: p5.p5InstanceExtensions | null = null;
+  private p5Instance: p5 | null = null;
   private isSaving: boolean = false;
   private isReady: boolean = false;
   private readyCallback: (() => void) | null = null;
@@ -30,8 +65,8 @@ export class P5TextureCreator {
     console.log('P5Sketch: Constructor called with renderInfo:', renderInfo);
     
     // Check if event listeners are already added
-    if (!window['p5TextureCreatorListenersAdded']) {
-      window['p5TextureCreatorListenersAdded'] = true;
+    if (!window.p5TextureCreatorListenersAdded) {
+      window.p5TextureCreatorListenersAdded = true;
 
       // Listen for save request
       window.addEventListener('saveSketch', (() => {
@@ -40,7 +75,7 @@ export class P5TextureCreator {
       }) as EventListener);
 
       // Add listener for renderInfo updates
-      window.addEventListener('renderInfoUpdated', ((event: CustomEvent) => {
+      window.addEventListener('renderInfoUpdated', ((event: CustomEvent<RenderInfo>) => {
         console.log('P5Sketch: Received new renderInfo (FULL):', JSON.stringify(event.detail));
         this.renderInfo = event.detail;
         if (this.p5Instance) {
@@ -55,8 +90,9 @@ export class P5TextureCreator {
     window.dispatchEvent(new CustomEvent('p5SketchReady'));
     console.log('P5Sketch: Ready event dispatched');
 
-    new p5((p: p5.p5InstanceExtensions) => {
-      this.p5Instance = p;
+    // Use a more specific type instead of any
+    new p5((p: P5SketchFunctions) => {
+      this.p5Instance = p as unknown as p5;
       
       p.setup = () => {
         const canvas = p.createCanvas(1024, 1024);
@@ -76,10 +112,16 @@ export class P5TextureCreator {
         p.clear();
         p.blendMode(p.BLEND);
         
+        // Safeguard all potential string values before operations
+        const safeTrackName = this.renderInfo.trackName || "";
+        const safeTrackArtists = this.renderInfo.trackArtists || "";
+        const safeCustomName1 = this.renderInfo.customName1 || "";
+        const safeCustomName2 = this.renderInfo.customName2 || "";
+        
         // Draw base rectangle
         p.noStroke();
         p.fill(255, 0, 0, 0);
-        p.rect(675,553,209,263)
+        p.rect(675, 553, 209, 263);
         p.rect(170, 553, 209, 263);
 
         // Add text for track name and artist
@@ -88,13 +130,13 @@ export class P5TextureCreator {
         p.textAlign(p.CENTER, p.CENTER);
         
         const textX = 170 + 209/2;
-        console.log('Track Name:', this.renderInfo.trackName);
-        console.log('Track Artists:', this.renderInfo.trackArtists);
+        console.log('Track Name:', safeTrackName);
+        console.log('Track Artists:', safeTrackArtists);
         console.log('customName:', this.renderInfo.customName);
-        p.text(this.renderInfo.trackName, textX, 200);
-        p.text(this.renderInfo.trackArtists, textX, 240);
-        p.text(this.renderInfo.customName1, 779, 208);
-        p.text(this.renderInfo.customName2, 779, 230);
+        p.text(safeTrackName, textX, 200);
+        p.text(safeTrackArtists, textX, 240);
+        p.text(safeCustomName1, 779, 208);
+        p.text(safeCustomName2, 779, 230);
 
 
         // Calculate center of rectangle for flower
@@ -142,12 +184,13 @@ export class P5TextureCreator {
           }, 'image/png');
         });
 
-        // Upload to Firebase
-        const url = await uploadImageToFirebase(blob);
-        console.log('Successfully saved and uploaded sketch:', url);
-
-      } catch (error) {
-        console.error('Failed to save or upload sketch:', error);
+        // Save design to Firestore and Storage
+        const { designId, shareableUrl } = await saveDesign(blob, this.renderInfo);
+        console.log('Successfully saved design with ID:', designId);
+        console.log('Shareable URL:', shareableUrl);
+        
+      } catch (error: unknown) {
+        console.error('Failed to save design:', error instanceof Error ? error.message : String(error));
       }
     }
   }
@@ -176,16 +219,26 @@ export class P5TextureCreator {
 const P5Sketch: React.FC = () => {
   const contextValue = useContext(RenderInfoContext);
   console.log("Context Value in P5Sketch:", contextValue);
-  const renderInfo = contextValue?.renderInfo || {
-    trackId: null,
-    trackName: '',
-    trackArtists: '',
-    // artWork: null,
-    customName: null
-  };
+  
+  // Use useMemo to memoize the renderInfo object
+  const renderInfo = useMemo(() => {
+    return contextValue?.renderInfo || {
+      trackId: null,
+      trackName: '',
+      trackArtists: '',
+      // artWork: null,
+      customName1: null,
+      customName2: null,
+      trypar: null,
+      tshirtColor: null,
+      tshirtColorHex: null
+    };
+  }, [contextValue?.renderInfo]);
+  
   console.log("RenderInfo before creating P5TextureCreator:", JSON.stringify(renderInfo));
 
   const [textureCreator, setTextureCreator] = useState<P5TextureCreator | null>(null);
+  const canvasRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     console.log("Full renderInfo object:", JSON.stringify(renderInfo));
